@@ -6,6 +6,12 @@ export function getDisplayName (WrappedComponent) {
     return WrappedComponent.displayName || WrappedComponent.name || 'Component';
 }
 
+export const delay = (duration = 1000) => {
+    return new Promise((resolve) => {
+        setTimeout(resolve, duration);
+    });
+};
+
 export const sortTasksByDate = (tasks) => {
     return tasks.sort((task1, task2) => {
         if (moment(task1.created).unix() < moment(task2.created).unix()) {
@@ -18,6 +24,22 @@ export const sortTasksByDate = (tasks) => {
 
         return 0;
     });
+};
+
+export const getUniqueID = (length = 15) => {
+    if (typeof length !== 'number') {
+        throw new Error('The function argument should be a number!');
+    }
+
+    let text = '';
+    const possible
+        = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+    for (let i = 0; i < length; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+
+    return text;
 };
 
 export const sortTasksByGroup = (tasks) => {
