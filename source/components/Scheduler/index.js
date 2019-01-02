@@ -114,6 +114,8 @@ export default class Scheduler extends Component {
          this._setTasksFetchingState(true);
 
          if (this._getAllCompleted()) {
+             this._setTasksFetchingState(false);
+
              return null;
          }
 
