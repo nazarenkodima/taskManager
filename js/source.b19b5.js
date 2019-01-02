@@ -6145,6 +6145,8 @@ class Scheduler extends _react.Component {
       this._setTasksFetchingState(true);
 
       if (this._getAllCompleted()) {
+        this._setTasksFetchingState(false);
+
         return null;
       }
 
@@ -11186,4 +11188,4 @@ var extendedAnimated = domElements.reduce(function (acc, element) {
 
 /***/ })
 /******/ ]);
-//# sourceMappingURL=source.41317.js.map
+//# sourceMappingURL=source.b19b5.js.map
