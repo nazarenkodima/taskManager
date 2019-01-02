@@ -22,10 +22,10 @@ exports[` 1`] = `
         className="toggleTaskCompletedState"
         color1="#3B8EF3"
         color2="#FFF"
-        height={25}
+        height={19}
         inlineBlock={true}
         onClick={[Function]}
-        width={25}
+        width={19}
       >
         <div
           className="toggleTaskCompletedState"
@@ -35,8 +35,8 @@ exports[` 1`] = `
           style={
             Object {
               "display": "inline-block",
-              "height": 25,
-              "width": 25,
+              "height": 19,
+              "width": 19,
             }
           }
         >
@@ -44,8 +44,8 @@ exports[` 1`] = `
             style={
               Object {
                 "display": "block",
-                "height": 25,
-                "width": 25,
+                "height": 19,
+                "width": 19,
               }
             }
             version="1.1"
@@ -151,7 +151,6 @@ exports[` 1`] = `
         </div>
       </withSvg(Star)>
       <withSvg(Edit)
-        checked={false}
         className="updateTaskMessageOnClick"
         color1="#3B8EF3"
         color2="#000"
@@ -207,10 +206,10 @@ exports[` 1`] = `
         className="removeTask"
         color1="#3B8EF3"
         color2="#000"
-        height={17}
+        height={19}
         inlineBlock={true}
         onClick={[Function]}
-        width={17}
+        width={19}
       >
         <div
           className="removeTask"
@@ -220,8 +219,8 @@ exports[` 1`] = `
           style={
             Object {
               "display": "inline-block",
-              "height": 17,
-              "width": 17,
+              "height": 19,
+              "width": 19,
             }
           }
         >
@@ -229,8 +228,8 @@ exports[` 1`] = `
             style={
               Object {
                 "display": "block",
-                "height": 17,
-                "width": 17,
+                "height": 19,
+                "width": 19,
               }
             }
             version="1.1"

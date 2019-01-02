@@ -1,8 +1,19 @@
 import { MAIN_URL, TOKEN } from './config';
 
 export const api = {
+    async fetchTasks () {
+        const response = await fetch(MAIN_URL, {
+            method:  'GET',
+            headers: {
+                Authorization: TOKEN,
+            },
+        });
+        const { data: tasks } = await response.json();
 
-    async _createTask (message) {
+        return tasks;
+    },
+
+    async createTask (message) {
         const response = await fetch(MAIN_URL, {
             method:  'POST',
             headers: {
@@ -17,7 +28,7 @@ export const api = {
         return task;
     },
 
-    async _updateTaskApi (task) {
+    async updateTask (task) {
         const response = await fetch(`${MAIN_URL}`, {
             method:  'PUT',
             headers: {
@@ -27,12 +38,41 @@ export const api = {
             body: JSON.stringify([task]),
         });
 
-        if (response.status !== 200) {
-            throw new Error('Task were not updated');
-        } else {
-            const { data: [tasks] } = await response.json();
+        const { data: tasks } = await response.json();
 
-            return tasks;
-        }
+        return tasks;
+
+    },
+
+    async removeTask (id) {
+        await fetch(`${MAIN_URL}/${id}`, {
+            method:  'DELETE',
+            headers: {
+                Authorization: TOKEN,
+            },
+        });
+    },
+    async completeAllTasks (tasks) {
+        const currentTasks = tasks.map((task) => {
+            return fetch(`${MAIN_URL}`, {
+                method:  'PUT',
+                headers: {
+                    Authorization:  TOKEN,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify([task]),
+            });
+        });
+
+        await Promise.all(currentTasks).then(
+            (resolve) => {
+                resolve.forEach((response) => {
+                    if (response.status !== 200) {
+                        throw new Error('Task were not updated');
+                    }
+                });
+            },
+            (reject) => `Tasks were not updated, ${reject.message}`
+        );
     },
 };

@@ -8,117 +8,126 @@ import Task from '../Task';
 
 // Instruments
 import Styles from './styles.m.css';
-import { api, TOKEN, MAIN_URL } from '../../REST'; // ! Импорт модуля API должен иметь именно такой вид (import { api } from '../../REST')
+import { api } from '../../REST';
 import { sortTasksByGroup } from '../../instruments';
+import FlipMove from "react-flip-move";
 
 export default class Scheduler extends Component {
 
     state = {
-        message:    '',
-        tasks:      [],
-        isSpinning: false,
-        completed:  false,
-        favorite:   false,
+        newTaskMessage: '',
+        tasks:          [],
+        isSpinning:     false,
+        tasksFilter:    '',
     };
 
     componentDidMount () {
-        this._fetchTasks();
+        this._setTasksFetchingState(true);
+        this._fetchTasksAsync();
     }
 
-    _setIsSpinningStatus (status) {
+    _setTasksFetchingState = (state) => {
         this.setState({
-            isSpinning: status,
+            isTasksFetching: state,
         });
-    }
+    };
 
-    _updateTask = (event) => {
+    _updateNewTaskMessage = (event) => {
         this.setState({
-            message: event.target.value,
+            newTaskMessage: event.target.value,
         });
     }
 
-    _fetchTasks = async () => {
-        this._setIsSpinningStatus(true);
+    _getAllCompleted = () => this.state.tasks.every((task) => task.completed);
 
-        const response = await fetch(MAIN_URL, {
-            method:  'GET',
-            headers: {
-                Authorization: TOKEN,
-            },
-        });
-        const { data: tasks, meta } = await response.json();
+    _fetchTasksAsync = async () => {
+        this._setTasksFetchingState(true);
 
-        console.log(tasks);
+        const tasks = await api.fetchTasks();
+
         this.setState({
-            tasks:      sortTasksByGroup(tasks),
-            isSpinning: false,
+            tasks,
         });
+
+        this._setTasksFetchingState(false);
+
     }
 
-    _createTask = async (message) => {
-        this._setIsSpinningStatus(true);
+    _createTaskAsync = async (event) => {
 
-        const response = await fetch(MAIN_URL, {
-            method:  'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization:  TOKEN,
-            },
-            body: JSON.stringify({ message }),
-        });
+        const { newTaskMessage } = this.state;
 
-        const { data: task } = await response.json();
+        if (!newTaskMessage.trim()) {
+            return null;
+        }
+
+        this._setTasksFetchingState(true);
+
+        const task = await api.createTask(newTaskMessage);
 
         this.setState(({ tasks }) => ({
-            tasks:      [task, ...tasks],
-            isSpinning: false,
+            tasks:          [task, ...tasks],
+            newTaskMessage: '',
         }));
+
+        this._setTasksFetchingState(false);
+
     }
 
-     _removeTask = async (id) => {
-         this._setIsSpinningStatus(true);
+     _removeTaskAsync = async (id) => {
+         this._setTasksFetchingState(true);
 
          const { tasks } = this.state;
 
-         await fetch(`${MAIN_URL}/${id}`, {
-             method:  'DELETE',
-             headers: {
-                 Authorization: TOKEN,
-             },
-         });
+         await api.removeTask(id);
 
          const newTasks = tasks.filter((task) => {
              return task.id !== id;
          });
 
          this.setState({
-             tasks:      newTasks,
-             isSpinning: false,
+             tasks: newTasks,
          });
+
+         this._setTasksFetchingState(false);
 
      }
 
-     _favoriteTask = async (taskToUpdate) => {
-         try {
-             this._setIsSpinningStatus(true);
-             const { tasks } = this.state;
+     _updateTaskAsync = async (taskToUpdate) => {
+         this._setTasksFetchingState(true);
 
-             const updateTask = await api._updateTaskApi(taskToUpdate);
+         const tasksToUpdate = await api.updateTask(taskToUpdate);
 
-             const index =  tasks.findIndex((task) => task.id === taskToUpdate.id);
+         this.setState(({ tasks }) => ({
+             tasks: tasks.map((task) => {
+                 const updatedTask = tasksToUpdate.find((updateTask) => task.id === updateTask.id);
 
-             const updatedTasks = tasks.map(
-                 (task, id) => id === index ? updateTask : task
-             );
-             const sortedUpdatedTasks = sortTasksByGroup(updatedTasks);
+                 return updatedTask ? updatedTask : task;
+             }),
+         }));
 
-             this.setState({
-                 tasks:      sortedUpdatedTasks,
-                 isSpinning: false,
-             });
-         } catch ({ message }) {
-             console.log(message);
+         this._setTasksFetchingState(false);
+
+     }
+
+     _completeAllTasksAsync = async () => {
+         this._setTasksFetchingState(true);
+
+         if (this._getAllCompleted()) {
+             return null;
          }
+
+         const { tasks } = this.state;
+
+         await api.completeAllTasks(tasks);
+
+         const completedTasks = tasks.map((task) => ({ ...task, completed: true }));
+
+         this.setState({
+             tasks: completedTasks,
+         });
+
+         this._setTasksFetchingState(false);
 
      }
 
@@ -128,73 +137,93 @@ export default class Scheduler extends Component {
      }
 
      _submitTask = () => {
-         const { message } = this.state;
+         const { newTaskMessage } = this.state;
 
-         if (!message) {
+         if (!newTaskMessage) {
              return null;
          }
 
-         this._createTask(message);
+         this._createTaskAsync(newTaskMessage);
 
          this.setState({
-             message: '',
+             newTaskMessage: '',
          });
      }
 
-     _submitOnEnter = (event) => {
-         const enterKey = event.key === 'Enter';
+     _filterTasks = (task) => {
+         const { tasksFilter } = this.state;
 
-         if (enterKey) {
-             event.preventDefault();
-             this._submitTask();
-         }
+         return task.message.toLowerCase().includes(tasksFilter);
+     };
+
+     _updateTasksFilter = (event) => {
+         this.setState({
+             tasksFilter: event.target.value.toLocaleLowerCase(),
+         });
+     };
+
+     _animateComposerEnter (composer) {
+         fromTo(composer, 1, { opacity: 0, rotationX: 50 }, { opacity: 1, rotationX: 0 });
      }
 
      render () {
-         const { tasks, message, isSpinning } = this.state;
+         const { tasks, newTaskMessage, isTasksFetching, tasksFilter } = this.state;
 
-         const taskJSX = tasks.map((task) => {
-             return (
+         const taskJSX = sortTasksByGroup(tasks.filter(this._filterTasks)).map((task) =>
+             (
                  <Task
-                     _createTask = { this._createTask }
-                     _favoriteTask = { this._favoriteTask }
-                     _removeTask = { this._removeTask }
-                     favorite = { task.favorite }
                      key = { task.id }
                      { ...task }
+                     _removeTaskAsync = { this._removeTaskAsync }
+                     _updateTaskAsync = { this._updateTaskAsync }
                  />
-             );
-         });
+
+             )
+         );
+
+         const allcompletedTasks = this._getAllCompleted();
 
          return (
              <section className = { Styles.scheduler }>
-                 <Spinner isSpinning = { isSpinning } />
+                 <Spinner isSpinning = { isTasksFetching } />
 
                  <main>
                      <header>
-                         <h1>Планировщик задач</h1>
-                         <input placeholder = { `Поиск` } type = 'search' />
+                         <h1> Планировщик задач</h1>
+                         <input
+                             maxLength = { 50 }
+                             placeholder = 'Поиск'
+                             type = 'search'
+                             value = { tasksFilter }
+                             onChange = { this._updateTasksFilter }
+                         />
                      </header>
                      <section>
                          <form onSubmit = { this._handleFormSubmit }>
                              <input
-                                 maxLength = '50'
+                                 maxLength = { 50 }
                                  placeholder = { `Описaние моей новой задачи` }
                                  type = 'text'
-                                 value = { message }
-                                 onChange = { this._updateTask }
-                                 onKeyPress = { this._submitOnEnter }
+                                 value = { newTaskMessage }
+                                 onChange = { this._updateNewTaskMessage }
                              />
                              <button type = 'submit'>Добавить задачу</button>
                          </form>
                          <div>
                              <ul >
-                                 { taskJSX }
+                                 <FlipMove>{taskJSX}</FlipMove>
                              </ul>
+
                          </div>
                      </section>
                      <footer>
-                         <Checkbox color1 = '#000' color2 = '#FFF' inlineBlock />
+                         <Checkbox
+                             checked = { allcompletedTasks }
+                             color1 = '#363636'
+                             color2 = '#fff'
+                             inlineBlock
+                             onClick = { this._completeAllTasksAsync }
+                         />
                          <span className = { Styles.completeAllTasks }>Все задачи выполнены</span>
                      </footer>
                  </main>
