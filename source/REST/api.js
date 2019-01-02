@@ -60,7 +60,7 @@ export const api = {
                     Authorization:  TOKEN,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify([task]),
+                body: JSON.stringify([{ ...task, completed: true }]),
             });
         });
 
